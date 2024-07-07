@@ -20,8 +20,9 @@ def start() -> None:
 
     # Configure CORS
     origins = [
-        "http://localhost",
-        "http://localhost:3000",
+    #     "http://localhost",
+    #     "http://localhost:3000",
+    "*",
     ]
 
     app.add_middleware(
@@ -38,4 +39,5 @@ def start() -> None:
 
     add_routes(app, runnable, path="/chat", playground_type="chat")
     print("Starting server...")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8000)
