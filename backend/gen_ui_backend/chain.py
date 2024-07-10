@@ -4,14 +4,15 @@ from langchain.output_parsers.openai_tools import JsonOutputToolsParser
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnableConfig
-from langchain_openai import ChatOpenAI
+from langchain_openai import AzureChatOpenAI
 from langgraph.graph import END, StateGraph
 from langgraph.graph.graph import CompiledGraph
 
 from gen_ui_backend.tools.github import github_repo
 from gen_ui_backend.tools.invoice import invoice_parser
 from gen_ui_backend.tools.weather import weather_data
-
+import os
+from dotenv import load_dotenv
 
 class GenerativeUIState(TypedDict, total=False):
     input: HumanMessage
@@ -35,7 +36,25 @@ def invoke_model(state: GenerativeUIState, config: RunnableConfig) -> Generative
             MessagesPlaceholder("input"),
         ]
     )
-    model = ChatOpenAI(model="gpt-4o", temperature=0, streaming=True)
+    # Get the API key from environment variables
+    load_dotenv()
+    azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+    azure_api_key = os.getenv("AZURE_OPENAI_API_KEY")    
+    azure_open_api_version = os.getenv("AZURE_OPENAI_API_VERSION")
+
+    if not azure_api_key or not azure_endpoint or not azure_open_api_version:
+        raise ValueError("Azure OpenAI environment variables not set properly")
+
+    
+    # model = AzureChatOpenAI(model="gpt-4o", temperature=0, streaming=True,  openai_api_key=api_key)
+    model = AzureChatOpenAI(
+        azure_endpoint=azure_endpoint,
+        openai_api_key=azure_api_key,
+        openai_api_version=azure_open_api_version, 
+        deployment_name="gpt-4o",
+        temperature=0,
+        streaming=True
+    )
     tools = [github_repo, invoice_parser, weather_data]
     model_with_tools = model.bind_tools(tools)
     chain = initial_prompt | model_with_tools

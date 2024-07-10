@@ -7,11 +7,8 @@ from langserve import add_routes
 from gen_ui_backend.chain import create_graph
 from gen_ui_backend.types import ChatInputType
 
-# Load environment variables from .env file
-load_dotenv()
 
-
-def start() -> None:
+def start():
     app = FastAPI(
         title="Gen UI Backend",
         version="1.0",
@@ -20,9 +17,7 @@ def start() -> None:
 
     # Configure CORS
     origins = [
-    #     "http://localhost",
-    #     "http://localhost:3000",
-    "*",
+        "*",
     ]
 
     app.add_middleware(
@@ -38,6 +33,8 @@ def start() -> None:
     runnable = graph.with_types(input_type=ChatInputType, output_type=dict)
 
     add_routes(app, runnable, path="/chat", playground_type="chat")
-    print("Starting server...")
-    # uvicorn.run(app, host="0.0.0.0", port=8000)
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    
+    return app  # Return the app instead of running it
+
+# Add this line at the end of the file
+app = start()
