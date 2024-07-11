@@ -8,6 +8,9 @@ from langchain_openai import AzureChatOpenAI
 from langgraph.graph import END, StateGraph
 from langgraph.graph.graph import CompiledGraph
 
+from langchain_core.runnables import RunnablePassthrough, RunnableConfig
+
+from gen_ui_backend.types import ChatInputType
 from gen_ui_backend.tools.github import github_repo
 from gen_ui_backend.tools.invoice import invoice_parser
 from gen_ui_backend.tools.weather import weather_data
@@ -23,8 +26,7 @@ class GenerativeUIState(TypedDict, total=False):
     tool_result: Optional[dict]
     """The result of a tool call."""
 
-
-def invoke_model(state: GenerativeUIState, config: RunnableConfig) -> GenerativeUIState:
+def generate_chain():
     tools_parser = JsonOutputToolsParser()
     initial_prompt = ChatPromptTemplate.from_messages(
         [
@@ -58,6 +60,12 @@ def invoke_model(state: GenerativeUIState, config: RunnableConfig) -> Generative
     tools = [github_repo, invoice_parser, weather_data]
     model_with_tools = model.bind_tools(tools)
     chain = initial_prompt | model_with_tools
+    return chain, tools_parser
+
+chain, tools_parser = generate_chain()
+
+def invoke_model(state: GenerativeUIState, config: RunnableConfig) -> GenerativeUIState:
+    
     result = chain.invoke({"input": state["input"]}, config)
 
     if not isinstance(result, AIMessage):
@@ -95,6 +103,7 @@ def invoke_tools(state: GenerativeUIState) -> GenerativeUIState:
 
 
 def create_graph() -> CompiledGraph:
+    
     workflow = StateGraph(GenerativeUIState)
 
     workflow.add_node("invoke_model", invoke_model)  # type: ignore
@@ -105,3 +114,43 @@ def create_graph() -> CompiledGraph:
 
     graph = workflow.compile()
     return graph
+
+def create_agent():
+    def parse_input(input_data: ChatInputType):
+        return {"input": input_data["input"]}
+
+    def wrapped_invoke_model(state: GenerativeUIState, config: RunnableConfig):
+        return invoke_model(state, config)
+
+    agent_chain = (
+        RunnablePassthrough.assign(parsed_input=parse_input)
+        | RunnablePassthrough.assign(
+            model_result=lambda x: wrapped_invoke_model(
+                GenerativeUIState(input=x["parsed_input"]["input"]),
+                RunnableConfig()
+            )
+        )
+        | (lambda x: x["model_result"])
+    )
+
+    return agent_chain.with_types(input_type=ChatInputType, output_type=dict)
+
+def create_agent2():
+    def parse_input(input_data: dict):
+        return {"input": input_data["input"]}
+
+    def run_model(parsed_input: dict):
+        state = GenerativeUIState(input=parsed_input["input"])
+        config = RunnableConfig()
+        return invoke_model(state, config)
+
+    def process_result(model_result: dict):
+        return model_result
+
+    def agent_function(input_data: dict):
+        parsed_data = parse_input(input_data)
+        model_result = run_model(parsed_data)
+        final_result = process_result(model_result)
+        return final_result
+
+    return agent_function
