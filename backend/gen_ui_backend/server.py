@@ -28,10 +28,10 @@ def start():
         allow_headers=["*"],
     )
 
-    # graph = create_graph()
-    # runnable = graph.with_types(input_type=ChatInputType, output_type=dict)
+    graph = create_graph()
+    runnable = graph.with_types(input_type=ChatInputType, output_type=dict)
     
-    runnable = create_agent()
+    # runnable = create_agent()
     
     # agent = create_agent()
     # def runnable(input_data: ChatInputType):
