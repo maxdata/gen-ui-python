@@ -31,15 +31,8 @@ def start():
     graph = create_graph()
     runnable = graph.with_types(input_type=ChatInputType, output_type=dict)
     
-    # runnable = create_agent()
-    
-    # agent = create_agent()
-    # def runnable(input_data: ChatInputType):
-    #     return agent({"input": input_data.input})
-
     add_routes(app, runnable, path="/chat", playground_type="default")
     
-    return app  # Return the app instead of running it
+    return app 
 
-# Add this line at the end of the file
 app = start()

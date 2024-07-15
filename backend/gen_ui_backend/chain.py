@@ -92,6 +92,8 @@ def invoke_tools(state: GenerativeUIState) -> GenerativeUIState:
         "github-repo": github_repo,
         "invoice-parser": invoice_parser,
         "weather-data": weather_data,
+        # "rank-candiate": rank_candidate,
+        # "stock-price-realtime": stock_price_realtime,
     }
 
     if state["tool_calls"] is not None:

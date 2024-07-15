@@ -65,6 +65,10 @@ async function agent(inputs: {
     event: StreamEvent,
     fields: EventHandlerFields,
   ) => {
+
+    // console.log("event", event);
+    // console.log("fields", fields);
+
     const [type] = event.event.split("_").slice(2);
     if (
       type !== "end" ||
@@ -79,11 +83,16 @@ async function agent(inputs: {
       "tool_calls" in event.data.output &&
       event.data.output.tool_calls.length > 0
     ) {
+      
       const toolCall = event.data.output.tool_calls[0];
+
       if (!selectedToolComponent && !selectedToolUI) {
-        selectedToolComponent = TOOL_COMPONENT_MAP[toolCall.type];
+
+        selectedToolComponent = TOOL_COMPONENT_MAP[toolCall.type];        
         selectedToolUI = createStreamableUI(selectedToolComponent.loading());
+
         fields.ui.append(selectedToolUI?.value);
+
       }
     }
   };
@@ -95,7 +104,11 @@ async function agent(inputs: {
    * @param output - The output object from the 'invoke_tools' event
    */
   const handleInvokeToolsEvent = (event: StreamEvent) => {
+
+    // console.log("invoke tools event", event);
+
     const [type] = event.event.split("_").slice(2);
+
     if (
       type !== "end" ||
       !event.data.output ||
@@ -107,6 +120,9 @@ async function agent(inputs: {
 
     if (selectedToolUI && selectedToolComponent) {
       const toolData = event.data.output.tool_result;
+
+      console.log("tool data", toolData);
+
       selectedToolUI.done(selectedToolComponent.final(toolData));
     }
   };
